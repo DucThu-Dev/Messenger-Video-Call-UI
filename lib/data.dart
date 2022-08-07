@@ -3,8 +3,7 @@ const members = [
   CallMember(
       id: '#00001',
       name: 'Roronoa Zoro',
-      videoSource:
-          'https://i.pinimg.com/736x/d1/3a/ab/d13aabae7d964d443b0bbfcdf242e86c.jpg'),
+      videoSource: 'https://pbs.twimg.com/media/E1imXqNWQAEOzoL.jpg:large'),
   CallMember(
       id: '#00002',
       name: 'Monkey D. Luffy',
