@@ -34,13 +34,24 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'Let \'s call Ethan',
+            Container(
+              height: 300,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: NetworkImage(
+                      'https://image.winudf.com/v2/image/Y29tLmJhbGVmb290Lk1vbmtleURMdWZmeVdhbGxwYXBlcl9zY3JlZW5fMF8xNTI0NTE5MTEwXzAyOA/screen-0.jpg?fakeurl=1&type=.webp'),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Text(
+              'Let \'s join the call',
+              style: Theme.of(context).textTheme.headline4,
             ),
             ElevatedButton(
               onPressed: () {

@@ -1,42 +1,29 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_messenger_video_call_ui/calling_video/calling_state.dart';
+import 'package:flutter_messenger_video_call_ui/calling_video/common_menu.dart';
 import 'package:flutter_messenger_video_call_ui/constant.dart';
 import 'package:flutter_messenger_video_call_ui/data.dart';
+import 'package:provider/provider.dart';
 
 part './draggable_menu_sheet.dart';
+part './gesture_reaction.dart';
 
-class CallingPage extends StatefulWidget {
+class CallingPage extends StatelessWidget {
   const CallingPage({Key? key}) : super(key: key);
-
-  @override
-  State<CallingPage> createState() => _CallingPageState();
-}
-
-class _CallingPageState extends State<CallingPage> {
-  final DraggableScrollableController _draggableScrollableController =
-      DraggableScrollableController();
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: SizedBox(
-          height: screenSize.height,
-          width: screenSize.width,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                  child: CallingView(
-                controller: _draggableScrollableController,
-              )),
-              Positioned.fill(
-                child: MenuBottomModal(
-                  controller: _draggableScrollableController,
-                ),
-              ),
-            ],
+    return ChangeNotifierProvider(
+      create: (context) => CallingState(),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: SizedBox(
+            height: screenSize.height,
+            width: screenSize.width,
+            child: const CallingPageView(),
           ),
         ),
       ),
@@ -44,52 +31,106 @@ class _CallingPageState extends State<CallingPage> {
   }
 }
 
-class CallingView extends StatefulWidget {
-  const CallingView({Key? key, required this.controller}) : super(key: key);
+class CallingPageView extends StatelessWidget {
+  const CallingPageView({Key? key}) : super(key: key);
 
-  final DraggableScrollableController controller;
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CallingState>(
+      builder: (context, state, child) {
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: CallingView(
+                messengerAnimationMode: state.messengerAnimationMode,
+              ),
+            ),
+            Positioned(
+              left: 8,
+              top: 0,
+              bottom: 0,
+              child: FunOptionMenuSideBar(
+                mode: state.messengerAnimationMode,
+              ),
+            ),
+            const Positioned.fill(
+              child: MenuBottomModal(),
+            ),
+            const Positioned.fill(
+              child: GestureReaction(),
+            ),
+            AnimatedPositioned(
+              duration: draggableBottomSheetAnimateDuration,
+              curve: draggableBottomSheetCurve,
+              top: state.messengerAnimationMode == MessengerAnimationMode.focus
+                  ? 12
+                  : 0.0,
+              left: 12,
+              child: AnimatedOpacity(
+                opacity:
+                    state.messengerAnimationMode == MessengerAnimationMode.focus
+                        ? 1.0
+                        : 0.0,
+                duration: draggableBottomSheetAnimateDuration,
+                curve: draggableBottomSheetCurve,
+                child: const BackButton(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class CallingView extends StatefulWidget {
+  const CallingView({
+    Key? key,
+    required this.messengerAnimationMode,
+  }) : super(key: key);
+
+  final MessengerAnimationMode messengerAnimationMode;
 
   @override
   State<CallingView> createState() => _CallingViewState();
 }
 
 class _CallingViewState extends State<CallingView> {
-  bool _expandVideoCall = true;
-
   final _members = members;
 
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(() {
-      if (widget.controller.size == kDraggableMaxHeightFraction) {
-        setState(() {
-          _expandVideoCall = false;
-        });
-      } else {
-        setState(() {
-          _expandVideoCall = true;
-        });
-      }
-    });
+  }
+
+  @override
+  void didUpdateWidget(covariant CallingView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.messengerAnimationMode != widget.messengerAnimationMode) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     Widget child;
-    if (_expandVideoCall) {
-      child = CallingViewExpand(
+    if (widget.messengerAnimationMode == MessengerAnimationMode.expand) {
+      child = CallingViewDraggableBottomSheetExpand(
         callMembers: _members,
+        messengerAnimationMode: widget.messengerAnimationMode,
       );
     } else {
-      child = CallingViewCollaped(
+      child = CallingViewDraggableBottomSheetFocus(
         callMembers: _members,
+        messengerAnimationMode: widget.messengerAnimationMode,
       );
     }
 
     return SizedBox.expand(
       child: Container(
-        decoration: const BoxDecoration(color: Colors.amber),
+        decoration: const BoxDecoration(color: Colors.black),
         alignment: Alignment.topCenter,
         child: child,
       ),
@@ -97,51 +138,88 @@ class _CallingViewState extends State<CallingView> {
   }
 }
 
-class CallingViewExpand extends StatelessWidget {
-  const CallingViewExpand({Key? key, required this.callMembers})
-      : super(key: key);
+class CallingViewDraggableBottomSheetFocus extends StatelessWidget {
+  const CallingViewDraggableBottomSheetFocus({
+    Key? key,
+    required this.callMembers,
+    required this.messengerAnimationMode,
+  }) : super(key: key);
 
   final List<CallMember> callMembers;
 
+  final MessengerAnimationMode messengerAnimationMode;
+
+  /// Because I lazy to handle logic, and it also out of scope of my target.
+  /// => Get this hardcode.
+  CallMember get firstMem => callMembers.first;
+
+  /// Because I lazy to handle logic, and it also out of scope of my target.
+  /// => Get this hardcode.
+  CallMember get secondMem => callMembers.last;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 500,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(
-              color: Colors.cyan,
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.black,
             ),
           ),
-          Positioned(
-            top: 12,
-            right: 12,
-            child: TinyMeVideoView(
-              me: callMembers.first,
+        ),
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black,
+              image: DecorationImage(
+                image: NetworkImage(firstMem.videoSource),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        AnimatedPositioned(
+          duration: draggableBottomSheetAnimateDuration,
+          curve: draggableBottomSheetCurve,
+          top: messengerAnimationMode == MessengerAnimationMode.focus ? 24 : 12,
+          right: 12,
+          child: TinyMeVideoView(
+            me: secondMem,
+          ),
+        ),
+      ],
     );
   }
 }
 
-class CallingViewCollaped extends StatelessWidget {
-  const CallingViewCollaped({Key? key, required this.callMembers})
+class CallingViewDraggableBottomSheetExpand extends StatelessWidget {
+  const CallingViewDraggableBottomSheetExpand(
+      {Key? key,
+      required this.callMembers,
+      required this.messengerAnimationMode})
       : super(key: key);
 
   final List<CallMember> callMembers;
+  final MessengerAnimationMode messengerAnimationMode;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: callMembers
-          .map((member) => TinyMeVideoView(
-                me: member,
-              ))
-          .toList(),
+    final blocHeight =
+        MediaQuery.of(context).size.height * (1 - kDraggableMaxHeightFraction);
+    return SizedBox(
+      height: blocHeight,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: callMembers
+              .map((member) => TinyMeVideoView(
+                    me: member,
+                  ))
+              .toList(),
+        ),
+      ),
     );
   }
 }
@@ -157,10 +235,12 @@ class TinyMeVideoView extends StatelessWidget {
     return Container(
       height: kTinyMeVideoCallViewHeight,
       width: kTinyMeVideoCallViewWidth,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         borderRadius: kBorderRadius12,
-
-        /// TODO: Get user video from camera.
+        image: DecorationImage(
+          image: NetworkImage(me.videoSource),
+          fit: BoxFit.cover,
+        ),
         color: Colors.blueGrey,
       ),
     );

@@ -2,24 +2,29 @@ part of 'calling_page.dart';
 
 /// The bottom modal sheet includes menu of the video call.
 class MenuBottomModal extends StatelessWidget {
-  const MenuBottomModal({Key? key, required this.controller}) : super(key: key);
-
-  final DraggableScrollableController controller;
+  const MenuBottomModal({
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      controller: controller,
+      controller: context.read<CallingState>().draggableScrollableController,
       snap: true,
       initialChildSize: kDraggableMinHeightFraction,
-      minChildSize: kDraggableMinHeightFraction,
+      minChildSize: kDraggableZeroHeightFraction,
+      snapSizes: const [
+        kDraggableZeroHeightFraction,
+        kDraggableMinHeightFraction,
+        kDraggableMaxHeightFraction,
+      ],
       maxChildSize: kDraggableMaxHeightFraction,
-      builder: ((context, scrollController) {
+      builder: (context, scrollController) {
         return Container(
           padding: kPadding12,
-          decoration: const BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.only(
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(24),
               topRight: Radius.circular(24),
             ),
@@ -48,7 +53,7 @@ class MenuBottomModal extends StatelessWidget {
             ],
           ),
         );
-      }),
+      },
     );
   }
 }
